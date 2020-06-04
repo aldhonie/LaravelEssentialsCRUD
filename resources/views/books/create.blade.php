@@ -31,10 +31,10 @@
         <div class="form-group row">
             <div class="col-sm-2">Categories</div>
             <div class="col-sm-10">
-                @forelse ($categories as $category)
+                @forelse ($categories as $id => $category)
                 <div class="form-check">
-                    <input name="categories[]" type="checkbox" class="form-check-input" value="{{ $category->id}}" />
-                    <label class="form-check-label" for="start">{{ $category->name }}</label>
+                    <input name="categories[]" type="checkbox" class="form-check-input" value="{{ $id }}" />
+                    <label class="form-check-label" for="start">{{ $category }}</label>
                 </div>
                 @empty
                     
@@ -51,10 +51,10 @@
         <div class="form-group row">
             <div class="col-sm-2">Keywords</div>
             <div class="col-sm-10">
-                @forelse ($keywords as $keyword)
+                @forelse ($keywords as $id => $keyword)
                 <div class="form-check">
-                <input name="keywords[]" type="checkbox" class="form-check-input" value="{{ $keyword->id}}" />
-                    <label class="form-check-label" for="start">{{ $keyword->name }}</label>
+                <input name="keywords[]" type="checkbox" class="form-check-input" value="{{ $id }}" />
+                    <label class="form-check-label" for="start">{{ $keyword }}</label>
                 </div>
                 @empty
                     

@@ -31,8 +31,8 @@ class BooksController extends Controller
      */
     public function create()
     {
-        $categories = Categories::all();
-        $keywords =  Keywords::all();
+        $categories = Categories::get()->pluck('name', 'id');
+        $keywords =  Keywords::get()->pluck('name', 'id');
 
         return view('books.create')
             ->with('categories', $categories)
@@ -58,26 +58,8 @@ class BooksController extends Controller
         ]);
 
         $book = Books::create($request->all());
-        
-        $categories = collect($request->input('categories'))
-            ->map(function($category) use($book) {
-                return [
-                    'book_id' => $book->id,
-                    'category_id' => $category
-                ];
-            })->values()->toArray();  
-
-        DB::table('books_categories')->insert($categories);
-
-        $keywords = collect($request->input('keywords'))
-            ->map(function($keyword) use($book) {
-                return [
-                    'book_id' => $book->id,
-                    'keyword_id' => $keyword
-                ];
-            })->toArray();
-
-        DB::table('books_keywords')->insert($keywords);
+        $book->categories()->attach($request->input('categories'));
+        $book->keywords()->attach($request->input('keywords'));
 
         return redirect()->route('books.index');
     }
@@ -101,7 +83,9 @@ class BooksController extends Controller
      */
     public function edit(Books $book)
     {
-        $book = $book->with(['categories', 'keywords'])->where('id', $book->id)->first();
+        $book = $book->with(['categories', 'keywords'])
+            ->where('id', $book->id)
+            ->first();
 
         $categories = Categories::all()
             ->map(function($category) use($book) {
@@ -111,7 +95,7 @@ class BooksController extends Controller
                     'checked' => ($book->categories)
                         ->filter(function($bookCat) use($category) {
                             return $bookCat->id == $category->id;
-                        })->toArray() ? true : false
+                        })->first() ? true : false
                 ];
             });
 
@@ -123,7 +107,7 @@ class BooksController extends Controller
                     'checked' => ($book->keywords)
                         ->filter(function($bookKey) use($keyword) {
                             return $bookKey->id == $keyword->id;
-                        })->toArray() ? true : false
+                        })->first() ? true : false
                 ];
             });
         
@@ -152,31 +136,27 @@ class BooksController extends Controller
             'publisher' => 'required',
         ]);
 
-
-        $book->update($request->all());
-
-        BooksKeywords::where('book_id', $book->id)->delete();
-        BooksCategories::where('book_id', $book->id)->delete();
         
-        $categories = collect($request->input('categories'))
-        ->map(function($category) use($book) {
-            return [
-                'book_id' => (int) $book->id,
-                'category_id' => (int) $category
-            ];
-        })->values()->toArray();  
+        $book->fill($request->input());
+        $book->save();
 
-        BooksCategories::insert($categories);
+        $categories = collect($request->input('categories'))
+            ->map(function($category) {
+                return [
+                    'category_id' => (int) $category
+                ];
+            })->all(); 
+
+        $book->categories()->sync($categories);
 
         $keywords = collect($request->input('keywords'))
-        ->map(function($keyword) use($book) {
-            return [
-                'book_id' => (int) $book->id,
-                'keyword_id' => (int) $keyword
-            ];
-        })->toArray();
-        
-        BooksKeywords::insert($keywords);
+            ->map(function($keyword) {
+                return [
+                    'keyword_id' => (int) $keyword
+                ];
+            })->all();
+
+        $book->keywords()->sync($keywords);
 
         return redirect()->route('books.index');
     }
@@ -189,8 +169,8 @@ class BooksController extends Controller
      */
     public function destroy(Books $book)
     {   
-        BooksCategories::where('book_id', $book->id)->delete();
-        BooksKeywords::where('book_id', $book->id)->delete();
+        $book->categories()->detach();
+        $book->keywords()->detach();
         $book->delete();
 
         return redirect()->route('books.index');

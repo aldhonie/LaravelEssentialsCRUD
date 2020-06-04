@@ -20,3 +20,6 @@ Route::get('/', function () {
 Route::resource('books', 'BooksController');
 Route::resource('categories', 'CategoriesController');
 Route::resource('keywords', 'KeywordsController');
+Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');
